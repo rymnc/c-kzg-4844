@@ -228,59 +228,6 @@ impl KZGSettings {
 
         Self::load_trusted_setup(g1_points.as_ref(), g2_points.as_ref())
     }
-
-    /// Loads the trusted setup parameters from a file. The file format is as follows:
-    ///
-    /// FIELD_ELEMENTS_PER_BLOB
-    /// 65 # This is fixed and is used for providing multiproofs up to 64 field elements.
-    /// FIELD_ELEMENT_PER_BLOB g1 byte values
-    /// 65 g2 byte values
-    #[cfg(not(feature = "std"))]
-    pub fn load_trusted_setup_file(file_path: &CStr) -> Result<Self, Error> {
-        Self::load_trusted_setup_file_inner(file_path)
-    }
-
-    /// Loads the trusted setup parameters from a file.
-    ///
-    /// Same as [`load_trusted_setup_file`](Self::load_trusted_setup_file)
-    #[cfg_attr(not(feature = "std"), doc = ", but takes a `CStr` instead of a `Path`")]
-    /// .
-    pub fn load_trusted_setup_file_inner(file_path: &CStr) -> Result<Self, Error> {
-        // SAFETY: `b"r\0"` is a valid null-terminated string.
-        const MODE: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"r\0") };
-
-        // SAFETY:
-        // - .as_ptr(): pointer is not dangling because file_path has not been dropped.
-        //    Usage or ptr: File will not be written to it by the c code.
-        let file_ptr = unsafe { libc::fopen(file_path.as_ptr(), MODE.as_ptr()) };
-        if file_ptr.is_null() {
-            #[cfg(not(feature = "std"))]
-            return Err(Error::InvalidTrustedSetup(format!(
-                "Failed to open trusted setup file {file_path:?}"
-            )));
-
-            #[cfg(feature = "std")]
-            return Err(Error::InvalidTrustedSetup(format!(
-                "Failed to open trusted setup file {file_path:?}: {}",
-                std::io::Error::last_os_error()
-            )));
-        }
-        let mut kzg_settings = MaybeUninit::<KZGSettings>::uninit();
-        let result = unsafe {
-            let res = load_trusted_setup_file(kzg_settings.as_mut_ptr(), file_ptr);
-            let _unchecked_close_result = libc::fclose(file_ptr);
-
-            if let C_KZG_RET::C_KZG_OK = res {
-                Ok(kzg_settings.assume_init())
-            } else {
-                Err(Error::InvalidTrustedSetup(format!(
-                    "Invalid trusted setup: {res:?}"
-                )))
-            }
-        };
-
-        result
-    }
 }
 
 impl Drop for KZGSettings {

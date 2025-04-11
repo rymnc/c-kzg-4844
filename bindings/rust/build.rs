@@ -83,6 +83,7 @@ fn make_bindings(header_path: &str, blst_headers_dir: &str, bindings_out_path: &
         // Remove the definition of FILE to use the libc one, which is more convenient.
         .blocklist_type("FILE")
         // Inject rust code using libc's FILE
+        .raw_line(r#"#[cfg(feature = "std")]"#)
         .raw_line("use libc::FILE;")
         // Do no generate layout tests.
         .layout_tests(false)
