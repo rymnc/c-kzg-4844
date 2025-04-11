@@ -157,33 +157,6 @@ impl KZGSettings {
         }
     }
 
-    /// Loads the trusted setup parameters from a file. The file format is as follows:
-    ///
-    /// FIELD_ELEMENTS_PER_BLOB
-    /// 65 # This is fixed and is used for providing multiproofs up to 64 field elements.
-    /// FIELD_ELEMENT_PER_BLOB g1 byte values
-    /// 65 g2 byte values
-    #[cfg(feature = "std")]
-    pub fn load_trusted_setup_file(file_path: &Path) -> Result<Self, Error> {
-        #[cfg(unix)]
-        let file_path_bytes = {
-            use std::os::unix::prelude::OsStrExt;
-            file_path.as_os_str().as_bytes()
-        };
-
-        #[cfg(windows)]
-        let file_path_bytes = file_path
-            .as_os_str()
-            .to_str()
-            .ok_or_else(|| Error::InvalidTrustedSetup("Unsupported non unicode file path".into()))?
-            .as_bytes();
-
-        let file_path = CString::new(file_path_bytes)
-            .map_err(|e| Error::InvalidTrustedSetup(format!("Invalid trusted setup file: {e}")))?;
-
-        Self::load_trusted_setup_file_inner(&file_path)
-    }
-
     /// Parses the contents of a KZG trusted setup file into a KzgSettings.
     pub fn parse_kzg_trusted_setup(trusted_setup: &str) -> Result<Self, Error> {
         let mut lines = trusted_setup.lines();
